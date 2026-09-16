@@ -57,6 +57,27 @@
     }
     .btn:hover { background: #334155; }
     .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+    .btn-download {
+      background: #0f172a;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-download:hover { background: #334155; }
+    .btn-download svg { width: 16px; height: 16px; flex: none; }
+    .download-row {
+      display: flex;
+      justify-content: flex-end;
+      margin: 0 0 8px;
+    }
     .year-label {
       font-size: 1.5rem;
       font-weight: 700;
@@ -80,6 +101,92 @@
       border-top: 1px solid var(--border);
     }
     footer { text-align: center; font-size: 0.75rem; color: var(--muted); margin-top: 14px; }
+
+    .view-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin: 0 0 14px;
+    }
+    .view-toggle-label { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+    .switch {
+      position: relative;
+      width: 42px;
+      height: 24px;
+      flex: none;
+      background: #cbd5e1;
+      border-radius: 20px;
+      cursor: pointer;
+      border: none;
+      transition: background 0.15s ease;
+    }
+    .switch.on { background: var(--oecd); }
+    .switch .knob {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.15s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+    .switch.on .knob { transform: translateX(18px); }
+
+    .series-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .series-chart-wrap { position: relative; height: 460px; width: 100%; }
+    .country-picker-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .country-picker-title { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+    .picker-actions { display: flex; gap: 8px; }
+    .mini-btn {
+      background: #f1f5f9;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 5px 11px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .mini-btn:hover { background: #e2e8f0; }
+    .country-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 6px 10px;
+      max-height: 220px;
+      overflow-y: auto;
+      padding: 4px 2px;
+    }
+    .country-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.82rem;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+    .country-item input { accent-color: var(--oecd); cursor: pointer; }
+    .country-item .swatch {
+      width: 9px; height: 9px; border-radius: 50%; flex: none;
+      background: transparent;
+    }
   </style>
 </head>
 <body>
@@ -93,19 +200,63 @@
       </p>
     </header>
 
-    <div class="controls">
-      <button class="btn" id="prevBtn">◀ Előző év</button>
-      <div class="year-label" id="yearLabel">2025</div>
-      <button class="btn" id="nextBtn">Következő év ▶</button>
+    <div class="view-toggle-row">
+      <span class="view-toggle-label">Országrangsor</span>
+      <button class="switch" id="viewSwitch"><div class="knob"></div></button>
+      <span class="view-toggle-label">Idősoros nézet</span>
     </div>
 
-    <div class="card">
+    <div id="yearView">
+      <div class="controls">
+        <button class="btn" id="prevBtn">◀ Előző év</button>
+        <div class="year-label" id="yearLabel">2025</div>
+        <button class="btn" id="nextBtn">Következő év ▶</button>
+      </div>
+
+      <div class="card">
+      <div class="download-row">
+        <button class="btn-download" id="downloadYearBtn" title="Grafikon letöltése PNG-ként">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 19h14"/></svg>
+          Letöltés PNG
+        </button>
+      </div>
       <div class="chart-wrap">
         <canvas id="chart"></canvas>
       </div>
       <div class="note">
         Minél rövidebb a piros sáv, annál kisebb a gyermeknevelés miatti relatív szegénység, annál bőkezűbb a család-támogatási rendszer.<br>
         Kék sávok = OECD-átlagok. Az adatok növekvő sorrendben (legkisebb hátrány felül).
+      </div>
+      </div>
+    </div>
+
+    <div id="seriesView" style="display:none;">
+      <div class="card series-panel">
+        <div class="view-toggle-row" style="margin: 2px 0 0;">
+          <span class="view-toggle-label">Családtámogatás</span>
+          <button class="switch" id="metricSwitch"><div class="knob"></div></button>
+          <span class="view-toggle-label">Szegénységi hátrány</span>
+        </div>
+        <div class="download-row">
+          <button class="btn-download" id="downloadSeriesBtn" title="Grafikon letöltése PNG-ként">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 19h14"/></svg>
+            Letöltés PNG
+          </button>
+        </div>
+        <div class="series-chart-wrap">
+          <canvas id="seriesChart"></canvas>
+        </div>
+        <div class="country-picker-head">
+          <span class="country-picker-title">Országok az idősorban</span>
+          <div class="picker-actions">
+            <button class="mini-btn" id="selectAllBtn">Összes kijelölése</button>
+            <button class="mini-btn" id="clearAllBtn">Kijelölés törlése</button>
+          </div>
+        </div>
+        <div class="country-grid" id="countryGrid"></div>
+        <div class="note">
+          Az idősor alapértelmezetten a családtámogatás nagyságát mutatja évről évre, országonként (28,57%-os családtámogatás nélküli hátrányhoz képesti kompenzáció); a kapcsolóval átválthat a szegénységi hátrányra. Alapértelmezetten csak Magyarország látszik.
+        </div>
       </div>
     </div>
 
@@ -237,115 +388,291 @@
     });
 
     render();
-  </script>
-</body>
-</html>
-        
-      </div>
-    </div>
 
-    <footer>
-      
-    </footer>
-  </div>
+    // ---------- Idősoros nézet ----------
+    const PALETTE = ['#0ea5e9','#f59e0b','#8b5cf6','#10b981','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#06b6d4','#d946ef','#eab308'];
 
-  <script>
-    const HIST = {"2000": [{"c": "Szlovénia", "v": 18.62}, {"c": "Magyarország", "v": 18.77}, {"c": "Luxemburg", "v": 19.05}, {"c": "Lettország", "v": 19.75}, {"c": "Ausztria", "v": 19.8}, {"c": "Belgium", "v": 19.95}, {"c": "Németország", "v": 21.29}, {"c": "Csehország", "v": 21.48}, {"c": "Franciaország", "v": 22.56}, {"c": "Finnország", "v": 22.88}, {"c": "Szlovákia", "v": 23.19}, {"c": "OECD-EU 22", "v": 23.5}, {"c": "Svédország", "v": 23.64}, {"c": "Svájc", "v": 23.74}, {"c": "Dánia", "v": 23.78}, {"c": "Norvégia", "v": 23.81}, {"c": "Izrael", "v": 23.87}, {"c": "Észtország", "v": 24.6}, {"c": "Kolumbia", "v": 24.62}, {"c": "Egyesült Államok", "v": 24.86}, {"c": "Hollandia", "v": 25.05}, {"c": "OECD-átlag", "v": 25.06}, {"c": "Egyesült Királyság", "v": 25.61}, {"c": "Portugália", "v": 25.69}, {"c": "Ausztrália", "v": 26.33}, {"c": "Lengyelország", "v": 26.35}, {"c": "Írország", "v": 26.55}, {"c": "Olaszország", "v": 26.58}, {"c": "Spanyolország", "v": 26.62}, {"c": "Izland", "v": 27.21}, {"c": "Japán", "v": 27.42}, {"c": "Kanada", "v": 27.99}, {"c": "Chile", "v": 28.24}, {"c": "Korea", "v": 28.39}, {"c": "Costa Rica", "v": 28.57}, {"c": "Litvánia", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}, {"c": "Törökország", "v": 28.57}, {"c": "Görögország", "v": 29.03}], "2001": [{"c": "Magyarország", "v": 17.62}, {"c": "Szlovénia", "v": 18.89}, {"c": "Luxemburg", "v": 19.52}, {"c": "Ausztria", "v": 19.9}, {"c": "Lettország", "v": 20.31}, {"c": "Belgium", "v": 20.37}, {"c": "Németország", "v": 21.61}, {"c": "Csehország", "v": 21.82}, {"c": "Franciaország", "v": 22.69}, {"c": "Finnország", "v": 23.21}, {"c": "Szlovákia", "v": 23.23}, {"c": "Svédország", "v": 23.44}, {"c": "OECD-EU 22", "v": 23.55}, {"c": "Svájc", "v": 23.8}, {"c": "Dánia", "v": 23.86}, {"c": "Norvégia", "v": 24.23}, {"c": "Izrael", "v": 24.24}, {"c": "Egyesült Királyság", "v": 24.51}, {"c": "Egyesült Államok", "v": 24.58}, {"c": "Portugália", "v": 24.63}, {"c": "Kolumbia", "v": 24.81}, {"c": "Észtország", "v": 25.06}, {"c": "OECD-átlag", "v": 25.06}, {"c": "Hollandia", "v": 25.18}, {"c": "Ausztrália", "v": 26.1}, {"c": "Olaszország", "v": 26.17}, {"c": "Lengyelország", "v": 26.33}, {"c": "Írország", "v": 26.42}, {"c": "Spanyolország", "v": 26.67}, {"c": "Izland", "v": 27.21}, {"c": "Japán", "v": 27.42}, {"c": "Kanada", "v": 28.0}, {"c": "Chile", "v": 28.26}, {"c": "Korea", "v": 28.4}, {"c": "Costa Rica", "v": 28.57}, {"c": "Litvánia", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}, {"c": "Törökország", "v": 28.57}, {"c": "Görögország", "v": 29.09}], "2002": [{"c": "Magyarország", "v": 18.46}, {"c": "Luxemburg", "v": 18.8}, {"c": "Szlovénia", "v": 19.02}, {"c": "Lettország", "v": 19.51}, {"c": "Ausztria", "v": 20.06}, {"c": "Belgium", "v": 20.51}, {"c": "Németország", "v": 20.97}, {"c": "Csehország", "v": 21.85}, {"c": "Szlovákia", "v": 22.5}, {"c": "Franciaország", "v": 23.05}, {"c": "Finnország", "v": 23.5}, {"c": "OECD-EU 22", "v": 23.51}, {"c": "Svédország", "v": 23.7}, {"c": "Svájc", "v": 23.89}, {"c": "Dánia", "v": 23.94}, {"c": "Izrael", "v": 24.44}, {"c": "Norvégia", "v": 24.47}, {"c": "Egyesült Királyság", "v": 24.58}, {"c": "Egyesült Államok", "v": 24.65}, {"c": "Észtország", "v": 24.73}, {"c": "Kolumbia", "v": 24.83}, {"c": "Hollandia", "v": 25.03}, {"c": "OECD-átlag", "v": 25.07}, {"c": "Olaszország", "v": 25.09}, {"c": "Írország", "v": 25.35}, {"c": "Portugália", "v": 25.46}, {"c": "Ausztrália", "v": 26.08}, {"c": "Spanyolország", "v": 26.73}, {"c": "Japán", "v": 27.43}, {"c": "Izland", "v": 27.76}, {"c": "Kanada", "v": 27.93}, {"c": "Chile", "v": 28.26}, {"c": "Korea", "v": 28.43}, {"c": "Costa Rica", "v": 28.57}, {"c": "Litvánia", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}, {"c": "Lengyelország", "v": 28.57}, {"c": "Törökország", "v": 28.57}, {"c": "Görögország", "v": 29.07}], "2003": [{"c": "Luxemburg", "v": 18.96}, {"c": "Szlovénia", "v": 19.03}, {"c": "Magyarország", "v": 19.18}, {"c": "Ausztria", "v": 20.02}, {"c": "Lettország", "v": 20.38}, {"c": "Belgium", "v": 20.7}, {"c": "Németország", "v": 21.03}, {"c": "Szlovákia", "v": 22.56}, {"c": "Franciaország", "v": 23.14}, {"c": "Egyesült Államok", "v": 23.54}, {"c": "OECD-EU 22", "v": 23.57}, {"c": "Finnország", "v": 23.68}, {"c": "Svédország", "v": 23.79}, {"c": "Svájc", "v": 23.83}, {"c": "Dánia", "v": 23.91}, {"c": "Csehország", "v": 24.13}, {"c": "Írország", "v": 24.35}, {"c": "Izrael", "v": 24.4}, {"c": "Kolumbia", "v": 24.53}, {"c": "Egyesült Királyság", "v": 24.58}, {"c": "Norvégia", "v": 24.61}, {"c": "Portugália", "v": 24.63}, {"c": "Hollandia", "v": 24.96}, {"c": "Észtország", "v": 25.01}, {"c": "OECD-átlag", "v": 25.04}, {"c": "Olaszország", "v": 25.22}, {"c": "Ausztrália", "v": 26.13}, {"c": "Spanyolország", "v": 26.7}, {"c": "Kanada", "v": 27.25}, {"c": "Japán", "v": 27.41}, {"c": "Litvánia", "v": 27.54}, {"c": "Izland", "v": 28.05}, {"c": "Chile", "v": 28.26}, {"c": "Korea", "v": 28.41}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}, {"c": "Lengyelország", "v": 28.57}, {"c": "Törökország", "v": 28.57}, {"c": "Görögország", "v": 28.93}], "2004": [{"c": "Luxemburg", "v": 19.0}, {"c": "Szlovénia", "v": 19.08}, {"c": "Magyarország", "v": 19.53}, {"c": "Ausztria", "v": 20.07}, {"c": "Belgium", "v": 20.82}, {"c": "Lettország", "v": 21.21}, {"c": "Németország", "v": 21.36}, {"c": "Szlovákia", "v": 22.32}, {"c": "Franciaország", "v": 23.1}, {"c": "OECD-EU 22", "v": 23.5}, {"c": "Ausztrália", "v": 23.54}, {"c": "Egyesült Államok", "v": 23.61}, {"c": "Finnország", "v": 23.67}, {"c": "Svájc", "v": 23.89}, {"c": "Svédország", "v": 23.95}, {"c": "Dánia", "v": 24.0}, {"c": "Csehország", "v": 24.07}, {"c": "Írország", "v": 24.1}, {"c": "Észtország", "v": 24.22}, {"c": "Hollandia", "v": 24.5}, {"c": "Egyesült Királyság", "v": 24.68}, {"c": "Norvégia", "v": 24.75}, {"c": "Izrael", "v": 24.91}, {"c": "OECD-átlag", "v": 24.97}, {"c": "Kolumbia", "v": 25.0}, {"c": "Litvánia", "v": 25.06}, {"c": "Portugália", "v": 25.26}, {"c": "Olaszország", "v": 25.28}, {"c": "Spanyolország", "v": 26.75}, {"c": "Japán", "v": 26.78}, {"c": "Kanada", "v": 27.58}, {"c": "Korea", "v": 28.18}, {"c": "Chile", "v": 28.27}, {"c": "Izland", "v": 28.32}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}, {"c": "Lengyelország", "v": 28.57}, {"c": "Törökország", "v": 28.57}, {"c": "Görögország", "v": 29.24}], "2005": [{"c": "Szlovénia", "v": 18.54}, {"c": "Luxemburg", "v": 19.14}, {"c": "Magyarország", "v": 20.03}, {"c": "Ausztria", "v": 20.4}, {"c": "Belgium", "v": 20.8}, {"c": "Németország", "v": 21.16}, {"c": "Lettország", "v": 22.21}, {"c": "Szlovákia", "v": 22.47}, {"c": "Litvánia", "v": 23.04}, {"c": "Franciaország", "v": 23.14}, {"c": "Csehország", "v": 23.35}, {"c": "OECD-EU 22", "v": 23.45}, {"c": "Egyesült Államok", "v": 23.7}, {"c": "Finnország", "v": 23.86}, {"c": "Svájc", "v": 23.93}, {"c": "Dánia", "v": 23.96}, {"c": "Írország", "v": 24.01}, {"c": "Svédország", "v": 24.13}, {"c": "Hollandia", "v": 24.39}, {"c": "Észtország", "v": 24.73}, {"c": "Olaszország", "v": 24.91}, {"c": "Norvégia", "v": 24.93}, {"c": "Kolumbia", "v": 25.0}, {"c": "OECD-átlag", "v": 25.03}, {"c": "Ausztrália", "v": 25.05}, {"c": "Portugália", "v": 25.29}, {"c": "Izrael", "v": 25.36}, {"c": "Egyesült Királyság", "v": 25.76}, {"c": "Japán", "v": 26.78}, {"c": "Spanyolország", "v": 26.8}, {"c": "Kanada", "v": 27.58}, {"c": "Korea", "v": 28.14}, {"c": "Chile", "v": 28.27}, {"c": "Izland", "v": 28.32}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}, {"c": "Lengyelország", "v": 28.57}, {"c": "Törökország", "v": 28.57}, {"c": "Görögország", "v": 29.31}], "2006": [{"c": "Szlovénia", "v": 18.67}, {"c": "Luxemburg", "v": 19.21}, {"c": "Magyarország", "v": 19.65}, {"c": "Ausztria", "v": 20.6}, {"c": "Belgium", "v": 20.87}, {"c": "Németország", "v": 21.2}, {"c": "Szlovákia", "v": 22.57}, {"c": "Észtország", "v": 22.9}, {"c": "Lettország", "v": 23.37}, {"c": "Franciaország", "v": 23.51}, {"c": "OECD-EU 22", "v": 23.55}, {"c": "Svédország", "v": 23.61}, {"c": "Svájc", "v": 23.65}, {"c": "Egyesült Államok", "v": 23.86}, {"c": "Írország", "v": 23.96}, {"c": "Csehország", "v": 23.98}, {"c": "Litvánia", "v": 23.99}, {"c": "Dánia", "v": 24.06}, {"c": "Finnország", "v": 24.1}, {"c": "Hollandia", "v": 24.58}, {"c": "Olaszország", "v": 24.95}, {"c": "OECD-átlag", "v": 24.95}, {"c": "Új-Zéland", "v": 25.09}, {"c": "Egyesült Királyság", "v": 25.09}, {"c": "Norvégia", "v": 25.1}, {"c": "Izrael", "v": 25.14}, {"c": "Kolumbia", "v": 25.43}, {"c": "Ausztrália", "v": 25.69}, {"c": "Portugália", "v": 25.75}, {"c": "Japán", "v": 26.03}, {"c": "Spanyolország", "v": 26.84}, {"c": "Izland", "v": 27.89}, {"c": "Kanada", "v": 27.98}, {"c": "Korea", "v": 28.06}, {"c": "Chile", "v": 28.27}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Lengyelország", "v": 28.57}, {"c": "Törökország", "v": 28.57}, {"c": "Görögország", "v": 29.46}], "2007": [{"c": "Csehország", "v": 18.88}, {"c": "Magyarország", "v": 19.39}, {"c": "Luxemburg", "v": 19.44}, {"c": "Szlovénia", "v": 20.35}, {"c": "Belgium", "v": 20.74}, {"c": "Ausztria", "v": 20.79}, {"c": "Németország", "v": 21.41}, {"c": "Lettország", "v": 22.84}, {"c": "Szlovákia", "v": 22.93}, {"c": "OECD-EU 22", "v": 23.21}, {"c": "Olaszország", "v": 23.6}, {"c": "Franciaország", "v": 23.68}, {"c": "Svájc", "v": 23.73}, {"c": "Észtország", "v": 23.92}, {"c": "Írország", "v": 23.93}, {"c": "Svédország", "v": 24.01}, {"c": "Egyesült Államok", "v": 24.11}, {"c": "Dánia", "v": 24.17}, {"c": "Finnország", "v": 24.36}, {"c": "Lengyelország", "v": 24.4}, {"c": "Hollandia", "v": 24.44}, {"c": "OECD-átlag", "v": 24.78}, {"c": "Litvánia", "v": 24.79}, {"c": "Új-Zéland", "v": 24.86}, {"c": "Izrael", "v": 24.99}, {"c": "Norvégia", "v": 25.28}, {"c": "Egyesült Királyság", "v": 25.52}, {"c": "Kolumbia", "v": 25.56}, {"c": "Portugália", "v": 25.68}, {"c": "Japán", "v": 25.86}, {"c": "Ausztrália", "v": 26.01}, {"c": "Spanyolország", "v": 26.38}, {"c": "Kanada", "v": 27.45}, {"c": "Korea", "v": 27.6}, {"c": "Izland", "v": 28.23}, {"c": "Chile", "v": 28.28}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Törökország", "v": 28.57}, {"c": "Görögország", "v": 28.67}], "2008": [{"c": "Csehország", "v": 19.22}, {"c": "Magyarország", "v": 19.69}, {"c": "Luxemburg", "v": 19.8}, {"c": "Szlovénia", "v": 20.02}, {"c": "Belgium", "v": 20.6}, {"c": "Ausztria", "v": 20.95}, {"c": "Németország", "v": 21.59}, {"c": "Észtország", "v": 22.48}, {"c": "Lettország", "v": 22.53}, {"c": "Svájc", "v": 23.15}, {"c": "OECD-EU 22", "v": 23.28}, {"c": "Szlovákia", "v": 23.29}, {"c": "Egyesült Államok", "v": 23.44}, {"c": "Franciaország", "v": 23.8}, {"c": "Olaszország", "v": 23.8}, {"c": "Írország", "v": 23.92}, {"c": "Svédország", "v": 24.26}, {"c": "Dánia", "v": 24.27}, {"c": "Hollandia", "v": 24.51}, {"c": "Finnország", "v": 24.57}, {"c": "Lengyelország", "v": 24.62}, {"c": "OECD-átlag", "v": 24.78}, {"c": "Új-Zéland", "v": 25.17}, {"c": "Norvégia", "v": 25.45}, {"c": "Litvánia", "v": 25.47}, {"c": "Egyesült Királyság", "v": 25.52}, {"c": "Kolumbia", "v": 25.53}, {"c": "Izrael", "v": 25.58}, {"c": "Portugália", "v": 25.6}, {"c": "Japán", "v": 25.86}, {"c": "Spanyolország", "v": 26.5}, {"c": "Ausztrália", "v": 26.68}, {"c": "Izland", "v": 27.11}, {"c": "Kanada", "v": 27.33}, {"c": "Korea", "v": 27.64}, {"c": "Törökország", "v": 27.94}, {"c": "Chile", "v": 28.28}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Görögország", "v": 28.67}], "2009": [{"c": "Szlovénia", "v": 20.0}, {"c": "Magyarország", "v": 20.06}, {"c": "Luxemburg", "v": 20.12}, {"c": "Ausztria", "v": 20.16}, {"c": "Csehország", "v": 20.65}, {"c": "Belgium", "v": 20.71}, {"c": "Németország", "v": 20.84}, {"c": "Lettország", "v": 22.57}, {"c": "Szlovákia", "v": 22.91}, {"c": "OECD-EU 22", "v": 23.27}, {"c": "Hollandia", "v": 23.54}, {"c": "Svájc", "v": 23.55}, {"c": "Írország", "v": 23.61}, {"c": "Franciaország", "v": 23.75}, {"c": "Olaszország", "v": 23.89}, {"c": "Észtország", "v": 24.06}, {"c": "Egyesült Államok", "v": 24.21}, {"c": "Dánia", "v": 24.32}, {"c": "Svédország", "v": 24.45}, {"c": "Litvánia", "v": 24.49}, {"c": "Finnország", "v": 24.74}, {"c": "OECD-átlag", "v": 24.85}, {"c": "Lengyelország", "v": 24.99}, {"c": "Portugália", "v": 25.02}, {"c": "Kolumbia", "v": 25.37}, {"c": "Egyesült Királyság", "v": 25.37}, {"c": "Norvégia", "v": 25.55}, {"c": "Izrael", "v": 25.81}, {"c": "Japán", "v": 25.83}, {"c": "Új-Zéland", "v": 26.57}, {"c": "Spanyolország", "v": 26.57}, {"c": "Ausztrália", "v": 26.7}, {"c": "Izland", "v": 26.7}, {"c": "Kanada", "v": 27.49}, {"c": "Korea", "v": 27.56}, {"c": "Törökország", "v": 27.95}, {"c": "Chile", "v": 28.29}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Görögország", "v": 28.66}], "2010": [{"c": "Szlovénia", "v": 20.14}, {"c": "Ausztria", "v": 20.27}, {"c": "Luxemburg", "v": 20.28}, {"c": "Csehország", "v": 20.72}, {"c": "Magyarország", "v": 20.81}, {"c": "Németország", "v": 20.83}, {"c": "Belgium", "v": 21.02}, {"c": "Lettország", "v": 21.59}, {"c": "Szlovákia", "v": 22.93}, {"c": "OECD-EU 22", "v": 23.49}, {"c": "Hollandia", "v": 23.6}, {"c": "Svájc", "v": 23.6}, {"c": "Franciaország", "v": 23.79}, {"c": "Írország", "v": 24.05}, {"c": "Olaszország", "v": 24.05}, {"c": "Észtország", "v": 24.11}, {"c": "Japán", "v": 24.21}, {"c": "Dánia", "v": 24.26}, {"c": "Egyesült Államok", "v": 24.32}, {"c": "Svédország", "v": 24.46}, {"c": "Finnország", "v": 24.83}, {"c": "OECD-átlag", "v": 25.0}, {"c": "Lengyelország", "v": 25.14}, {"c": "Kolumbia", "v": 25.34}, {"c": "Egyesült Királyság", "v": 25.57}, {"c": "Norvégia", "v": 25.65}, {"c": "Portugália", "v": 25.75}, {"c": "Izrael", "v": 25.92}, {"c": "Spanyolország", "v": 26.56}, {"c": "Új-Zéland", "v": 26.86}, {"c": "Litvánia", "v": 27.31}, {"c": "Kanada", "v": 27.53}, {"c": "Izland", "v": 27.56}, {"c": "Korea", "v": 27.6}, {"c": "Ausztrália", "v": 27.91}, {"c": "Törökország", "v": 27.95}, {"c": "Chile", "v": 28.3}, {"c": "Costa Rica", "v": 28.57}, {"c": "Görögország", "v": 28.57}, {"c": "Mexikó", "v": 28.57}], "2011": [{"c": "Magyarország", "v": 15.1}, {"c": "Szlovénia", "v": 20.19}, {"c": "Luxemburg", "v": 20.34}, {"c": "Ausztria", "v": 20.58}, {"c": "Belgium", "v": 21.02}, {"c": "Németország", "v": 21.03}, {"c": "Lettország", "v": 21.58}, {"c": "Csehország", "v": 21.62}, {"c": "Szlovákia", "v": 22.99}, {"c": "Svájc", "v": 23.35}, {"c": "OECD-EU 22", "v": 23.46}, {"c": "Hollandia", "v": 23.66}, {"c": "Franciaország", "v": 23.86}, {"c": "Olaszország", "v": 24.14}, {"c": "Írország", "v": 24.26}, {"c": "Dánia", "v": 24.37}, {"c": "Észtország", "v": 24.38}, {"c": "Egyesült Államok", "v": 24.45}, {"c": "Svédország", "v": 24.55}, {"c": "Japán", "v": 24.59}, {"c": "Finnország", "v": 24.9}, {"c": "OECD-átlag", "v": 25.02}, {"c": "Kolumbia", "v": 25.03}, {"c": "Lengyelország", "v": 25.33}, {"c": "Izrael", "v": 25.68}, {"c": "Egyesült Királyság", "v": 25.68}, {"c": "Norvégia", "v": 25.76}, {"c": "Spanyolország", "v": 26.61}, {"c": "Portugália", "v": 27.24}, {"c": "Litvánia", "v": 27.35}, {"c": "Új-Zéland", "v": 27.37}, {"c": "Kanada", "v": 27.45}, {"c": "Korea", "v": 27.56}, {"c": "Izland", "v": 27.93}, {"c": "Törökország", "v": 27.95}, {"c": "Chile", "v": 28.3}, {"c": "Ausztrália", "v": 28.57}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Görögország", "v": 28.6}], "2012": [{"c": "Magyarország", "v": 15.64}, {"c": "Szlovénia", "v": 20.55}, {"c": "Luxemburg", "v": 20.57}, {"c": "Ausztria", "v": 20.73}, {"c": "Belgium", "v": 21.03}, {"c": "Csehország", "v": 21.16}, {"c": "Németország", "v": 21.21}, {"c": "Lettország", "v": 21.8}, {"c": "Szlovákia", "v": 22.97}, {"c": "Hollandia", "v": 23.37}, {"c": "Svájc", "v": 23.4}, {"c": "OECD-EU 22", "v": 23.54}, {"c": "Franciaország", "v": 23.9}, {"c": "Olaszország", "v": 24.21}, {"c": "Írország", "v": 24.31}, {"c": "Dánia", "v": 24.41}, {"c": "Egyesült Államok", "v": 24.55}, {"c": "Észtország", "v": 24.61}, {"c": "Svédország", "v": 24.66}, {"c": "Finnország", "v": 24.87}, {"c": "Kolumbia", "v": 25.08}, {"c": "OECD-átlag", "v": 25.13}, {"c": "Lengyelország", "v": 25.45}, {"c": "Izrael", "v": 25.64}, {"c": "Egyesült Királyság", "v": 25.76}, {"c": "Norvégia", "v": 25.84}, {"c": "Japán", "v": 25.93}, {"c": "Spanyolország", "v": 26.56}, {"c": "Kanada", "v": 27.38}, {"c": "Portugália", "v": 27.38}, {"c": "Litvánia", "v": 27.4}, {"c": "Izland", "v": 27.46}, {"c": "Korea", "v": 27.51}, {"c": "Törökország", "v": 27.95}, {"c": "Chile", "v": 28.31}, {"c": "Új-Zéland", "v": 28.37}, {"c": "Ausztrália", "v": 28.57}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Görögország", "v": 28.59}], "2013": [{"c": "Magyarország", "v": 16.13}, {"c": "Luxemburg", "v": 20.69}, {"c": "Szlovénia", "v": 20.8}, {"c": "Ausztria", "v": 20.91}, {"c": "Belgium", "v": 21.0}, {"c": "Csehország", "v": 21.12}, {"c": "Németország", "v": 21.32}, {"c": "Lettország", "v": 22.04}, {"c": "Szlovákia", "v": 22.94}, {"c": "Svájc", "v": 23.12}, {"c": "Hollandia", "v": 23.45}, {"c": "OECD-EU 22", "v": 23.54}, {"c": "Olaszország", "v": 23.78}, {"c": "Franciaország", "v": 23.92}, {"c": "Dánia", "v": 24.42}, {"c": "Egyesült Államok", "v": 24.49}, {"c": "Írország", "v": 24.61}, {"c": "Svédország", "v": 24.76}, {"c": "Észtország", "v": 24.87}, {"c": "Finnország", "v": 24.92}, {"c": "OECD-átlag", "v": 25.13}, {"c": "Kolumbia", "v": 25.2}, {"c": "Lengyelország", "v": 25.55}, {"c": "Egyesült Királyság", "v": 25.81}, {"c": "Japán", "v": 25.89}, {"c": "Norvégia", "v": 25.95}, {"c": "Izrael", "v": 25.96}, {"c": "Korea", "v": 26.23}, {"c": "Portugália", "v": 26.34}, {"c": "Spanyolország", "v": 26.57}, {"c": "Litvánia", "v": 27.46}, {"c": "Kanada", "v": 27.51}, {"c": "Görögország", "v": 27.79}, {"c": "Izland", "v": 27.93}, {"c": "Törökország", "v": 27.95}, {"c": "Chile", "v": 28.32}, {"c": "Ausztrália", "v": 28.57}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 29.02}], "2014": [{"c": "Magyarország", "v": 16.61}, {"c": "Lettország", "v": 20.27}, {"c": "Szlovénia", "v": 20.82}, {"c": "Luxemburg", "v": 20.83}, {"c": "Ausztria", "v": 20.93}, {"c": "Belgium", "v": 21.02}, {"c": "Csehország", "v": 21.32}, {"c": "Németország", "v": 21.48}, {"c": "Svájc", "v": 22.96}, {"c": "Szlovákia", "v": 23.08}, {"c": "OECD-EU 22", "v": 23.54}, {"c": "Hollandia", "v": 23.65}, {"c": "Franciaország", "v": 23.95}, {"c": "Olaszország", "v": 23.96}, {"c": "Dánia", "v": 24.37}, {"c": "Egyesült Államok", "v": 24.58}, {"c": "Írország", "v": 24.63}, {"c": "Svédország", "v": 24.88}, {"c": "Finnország", "v": 24.92}, {"c": "Észtország", "v": 25.05}, {"c": "OECD-átlag", "v": 25.14}, {"c": "Kolumbia", "v": 25.23}, {"c": "Lengyelország", "v": 25.74}, {"c": "Egyesült Királyság", "v": 25.8}, {"c": "Japán", "v": 25.95}, {"c": "Norvégia", "v": 26.02}, {"c": "Korea", "v": 26.03}, {"c": "Izrael", "v": 26.26}, {"c": "Portugália", "v": 26.37}, {"c": "Spanyolország", "v": 26.58}, {"c": "Litvánia", "v": 27.17}, {"c": "Kanada", "v": 27.55}, {"c": "Görögország", "v": 27.8}, {"c": "Törökország", "v": 27.96}, {"c": "Chile", "v": 28.33}, {"c": "Izland", "v": 28.38}, {"c": "Ausztrália", "v": 28.57}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}], "2015": [{"c": "Magyarország", "v": 17.06}, {"c": "Lettország", "v": 20.33}, {"c": "Szlovénia", "v": 20.83}, {"c": "Luxemburg", "v": 20.87}, {"c": "Ausztria", "v": 20.99}, {"c": "Belgium", "v": 21.1}, {"c": "Csehország", "v": 21.1}, {"c": "Németország", "v": 21.49}, {"c": "Észtország", "v": 22.78}, {"c": "Svájc", "v": 22.94}, {"c": "Szlovákia", "v": 23.19}, {"c": "OECD-EU 22", "v": 23.37}, {"c": "Portugália", "v": 23.71}, {"c": "Hollandia", "v": 23.8}, {"c": "Franciaország", "v": 23.81}, {"c": "Olaszország", "v": 24.04}, {"c": "Dánia", "v": 24.41}, {"c": "Írország", "v": 24.55}, {"c": "Egyesült Államok", "v": 24.62}, {"c": "Kolumbia", "v": 24.81}, {"c": "Svédország", "v": 24.92}, {"c": "OECD-átlag", "v": 24.97}, {"c": "Finnország", "v": 25.06}, {"c": "Kanada", "v": 25.51}, {"c": "Lengyelország", "v": 25.84}, {"c": "Egyesült Királyság", "v": 25.84}, {"c": "Izrael", "v": 26.0}, {"c": "Japán", "v": 26.0}, {"c": "Korea", "v": 26.09}, {"c": "Norvégia", "v": 26.1}, {"c": "Spanyolország", "v": 26.63}, {"c": "Litvánia", "v": 27.2}, {"c": "Görögország", "v": 27.78}, {"c": "Törökország", "v": 27.97}, {"c": "Chile", "v": 28.33}, {"c": "Ausztrália", "v": 28.57}, {"c": "Costa Rica", "v": 28.57}, {"c": "Izland", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}], "2016": [{"c": "Magyarország", "v": 16.66}, {"c": "Csehország", "v": 19.54}, {"c": "Szlovénia", "v": 20.43}, {"c": "Lettország", "v": 20.48}, {"c": "Lengyelország", "v": 20.57}, {"c": "Luxemburg", "v": 20.93}, {"c": "Ausztria", "v": 21.06}, {"c": "Belgium", "v": 21.23}, {"c": "Németország", "v": 21.55}, {"c": "Észtország", "v": 22.75}, {"c": "OECD-EU 22", "v": 22.92}, {"c": "Svájc", "v": 23.07}, {"c": "Hollandia", "v": 23.13}, {"c": "Franciaország", "v": 23.33}, {"c": "Szlovákia", "v": 23.33}, {"c": "Olaszország", "v": 24.06}, {"c": "Dánia", "v": 24.42}, {"c": "Portugália", "v": 24.45}, {"c": "Írország", "v": 24.52}, {"c": "Egyesült Államok", "v": 24.68}, {"c": "Kolumbia", "v": 24.72}, {"c": "OECD-átlag", "v": 24.74}, {"c": "Svédország", "v": 25.0}, {"c": "Finnország", "v": 25.12}, {"c": "Kanada", "v": 25.52}, {"c": "Izrael", "v": 25.81}, {"c": "Egyesült Királyság", "v": 25.93}, {"c": "Japán", "v": 26.03}, {"c": "Litvánia", "v": 26.05}, {"c": "Norvégia", "v": 26.16}, {"c": "Korea", "v": 26.19}, {"c": "Spanyolország", "v": 26.63}, {"c": "Görögország", "v": 27.24}, {"c": "Törökország", "v": 27.88}, {"c": "Chile", "v": 28.32}, {"c": "Ausztrália", "v": 28.57}, {"c": "Costa Rica", "v": 28.57}, {"c": "Izland", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}], "2017": [{"c": "Magyarország", "v": 16.86}, {"c": "Lengyelország", "v": 19.4}, {"c": "Csehország", "v": 19.48}, {"c": "Szlovénia", "v": 20.41}, {"c": "Lettország", "v": 21.08}, {"c": "Ausztria", "v": 21.17}, {"c": "Belgium", "v": 21.27}, {"c": "Luxemburg", "v": 21.29}, {"c": "Németország", "v": 21.58}, {"c": "OECD-EU 22", "v": 22.9}, {"c": "Svájc", "v": 23.09}, {"c": "Észtország", "v": 23.12}, {"c": "Hollandia", "v": 23.14}, {"c": "Franciaország", "v": 23.24}, {"c": "Szlovákia", "v": 23.51}, {"c": "Olaszország", "v": 24.05}, {"c": "Dánia", "v": 24.46}, {"c": "Írország", "v": 24.59}, {"c": "OECD-átlag", "v": 24.74}, {"c": "Litvánia", "v": 24.76}, {"c": "Portugália", "v": 24.76}, {"c": "Egyesült Államok", "v": 24.78}, {"c": "Kolumbia", "v": 24.81}, {"c": "Svédország", "v": 25.09}, {"c": "Finnország", "v": 25.21}, {"c": "Kanada", "v": 25.64}, {"c": "Izrael", "v": 25.91}, {"c": "Egyesült Királyság", "v": 26.02}, {"c": "Japán", "v": 26.03}, {"c": "Norvégia", "v": 26.21}, {"c": "Korea", "v": 26.25}, {"c": "Spanyolország", "v": 26.64}, {"c": "Görögország", "v": 27.23}, {"c": "Törökország", "v": 27.89}, {"c": "Chile", "v": 28.32}, {"c": "Izland", "v": 28.43}, {"c": "Ausztrália", "v": 28.57}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}], "2018": [{"c": "Magyarország", "v": 17.03}, {"c": "Csehország", "v": 18.57}, {"c": "Lengyelország", "v": 19.4}, {"c": "Szlovénia", "v": 20.5}, {"c": "Ausztria", "v": 21.21}, {"c": "Lettország", "v": 21.3}, {"c": "Belgium", "v": 21.4}, {"c": "Luxemburg", "v": 21.43}, {"c": "Németország", "v": 21.73}, {"c": "OECD-EU 22", "v": 22.91}, {"c": "Hollandia", "v": 23.13}, {"c": "Svájc", "v": 23.13}, {"c": "Észtország", "v": 23.31}, {"c": "Franciaország", "v": 23.43}, {"c": "Szlovákia", "v": 23.74}, {"c": "Olaszország", "v": 24.08}, {"c": "Egyesült Államok", "v": 24.2}, {"c": "Dánia", "v": 24.56}, {"c": "Svédország", "v": 24.67}, {"c": "Írország", "v": 24.72}, {"c": "OECD-átlag", "v": 24.73}, {"c": "Kolumbia", "v": 24.88}, {"c": "Portugália", "v": 24.94}, {"c": "Litvánia", "v": 25.11}, {"c": "Finnország", "v": 25.44}, {"c": "Kanada", "v": 25.63}, {"c": "Izrael", "v": 25.92}, {"c": "Japán", "v": 26.05}, {"c": "Egyesült Királyság", "v": 26.1}, {"c": "Norvégia", "v": 26.29}, {"c": "Görögország", "v": 26.32}, {"c": "Korea", "v": 26.36}, {"c": "Spanyolország", "v": 26.66}, {"c": "Törökország", "v": 27.92}, {"c": "Izland", "v": 28.15}, {"c": "Chile", "v": 28.31}, {"c": "Ausztrália", "v": 28.57}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}], "2019": [{"c": "Lengyelország", "v": 17.11}, {"c": "Magyarország", "v": 17.38}, {"c": "Ausztria", "v": 18.11}, {"c": "Csehország", "v": 19.03}, {"c": "Szlovénia", "v": 20.54}, {"c": "Lettország", "v": 21.08}, {"c": "Belgium", "v": 21.46}, {"c": "Luxemburg", "v": 21.52}, {"c": "Németország", "v": 21.77}, {"c": "OECD-EU 22", "v": 22.68}, {"c": "Hollandia", "v": 23.13}, {"c": "Svájc", "v": 23.21}, {"c": "Észtország", "v": 23.24}, {"c": "Litvánia", "v": 23.41}, {"c": "Franciaország", "v": 23.62}, {"c": "Szlovákia", "v": 23.86}, {"c": "Olaszország", "v": 24.15}, {"c": "Egyesült Államok", "v": 24.28}, {"c": "OECD-átlag", "v": 24.6}, {"c": "Dánia", "v": 24.62}, {"c": "Svédország", "v": 24.67}, {"c": "Kolumbia", "v": 24.86}, {"c": "Írország", "v": 25.02}, {"c": "Portugália", "v": 25.07}, {"c": "Kanada", "v": 25.5}, {"c": "Finnország", "v": 25.51}, {"c": "Izrael", "v": 25.83}, {"c": "Japán", "v": 26.06}, {"c": "Korea", "v": 26.16}, {"c": "Egyesült Királyság", "v": 26.18}, {"c": "Norvégia", "v": 26.22}, {"c": "Görögország", "v": 26.35}, {"c": "Spanyolország", "v": 26.74}, {"c": "Törökország", "v": 27.91}, {"c": "Izland", "v": 28.19}, {"c": "Chile", "v": 28.3}, {"c": "Ausztrália", "v": 28.57}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}], "2020": [{"c": "Lengyelország", "v": 16.08}, {"c": "Ausztria", "v": 17.45}, {"c": "Magyarország", "v": 18.38}, {"c": "Csehország", "v": 19.12}, {"c": "Németország", "v": 20.79}, {"c": "Szlovénia", "v": 20.93}, {"c": "Lettország", "v": 21.2}, {"c": "Belgium", "v": 21.53}, {"c": "Luxemburg", "v": 21.79}, {"c": "Litvánia", "v": 22.05}, {"c": "OECD-EU 22", "v": 22.57}, {"c": "Egyesült Államok", "v": 22.7}, {"c": "Svájc", "v": 23.29}, {"c": "Hollandia", "v": 23.32}, {"c": "Észtország", "v": 23.34}, {"c": "Olaszország", "v": 23.58}, {"c": "Franciaország", "v": 23.74}, {"c": "Szlovákia", "v": 23.87}, {"c": "OECD-átlag", "v": 24.43}, {"c": "Kolumbia", "v": 24.46}, {"c": "Dánia", "v": 24.66}, {"c": "Svédország", "v": 24.74}, {"c": "Korea", "v": 24.9}, {"c": "Írország", "v": 25.07}, {"c": "Portugália", "v": 25.12}, {"c": "Finnország", "v": 25.61}, {"c": "Kanada", "v": 25.76}, {"c": "Izrael", "v": 25.77}, {"c": "Japán", "v": 26.0}, {"c": "Egyesült Királyság", "v": 26.1}, {"c": "Görögország", "v": 26.12}, {"c": "Norvégia", "v": 26.24}, {"c": "Spanyolország", "v": 26.67}, {"c": "Izland", "v": 27.81}, {"c": "Törökország", "v": 27.93}, {"c": "Chile", "v": 28.28}, {"c": "Ausztrália", "v": 28.57}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}], "2021": [{"c": "Lengyelország", "v": 16.15}, {"c": "Ausztria", "v": 18.56}, {"c": "Magyarország", "v": 19.11}, {"c": "Egyesült Államok", "v": 20.63}, {"c": "Szlovénia", "v": 21.12}, {"c": "Németország", "v": 21.39}, {"c": "Belgium", "v": 21.53}, {"c": "Luxemburg", "v": 21.88}, {"c": "Lettország", "v": 22.1}, {"c": "Csehország", "v": 22.37}, {"c": "Litvánia", "v": 22.6}, {"c": "OECD-EU 22", "v": 22.95}, {"c": "Szlovákia", "v": 23.34}, {"c": "Svájc", "v": 23.38}, {"c": "Hollandia", "v": 23.56}, {"c": "Olaszország", "v": 23.63}, {"c": "Észtország", "v": 23.65}, {"c": "Chile", "v": 23.76}, {"c": "Franciaország", "v": 24.05}, {"c": "Kolumbia", "v": 24.28}, {"c": "OECD-átlag", "v": 24.42}, {"c": "Dánia", "v": 24.73}, {"c": "Svédország", "v": 24.86}, {"c": "Írország", "v": 25.16}, {"c": "Portugália", "v": 25.25}, {"c": "Korea", "v": 25.47}, {"c": "Finnország", "v": 25.68}, {"c": "Izrael", "v": 25.73}, {"c": "Japán", "v": 26.0}, {"c": "Egyesült Királyság", "v": 26.21}, {"c": "Görögország", "v": 26.31}, {"c": "Kanada", "v": 26.33}, {"c": "Norvégia", "v": 26.35}, {"c": "Spanyolország", "v": 26.75}, {"c": "Izland", "v": 27.7}, {"c": "Törökország", "v": 27.91}, {"c": "Ausztrália", "v": 28.57}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}], "2022": [{"c": "Ausztria", "v": 17.08}, {"c": "Lengyelország", "v": 17.89}, {"c": "Olaszország", "v": 20.21}, {"c": "Lettország", "v": 20.31}, {"c": "Magyarország", "v": 20.38}, {"c": "Szlovákia", "v": 20.64}, {"c": "Szlovénia", "v": 21.37}, {"c": "Belgium", "v": 21.5}, {"c": "Németország", "v": 21.98}, {"c": "Luxemburg", "v": 22.15}, {"c": "Csehország", "v": 22.71}, {"c": "Litvánia", "v": 22.74}, {"c": "OECD-EU 22", "v": 22.87}, {"c": "Svájc", "v": 23.48}, {"c": "Hollandia", "v": 23.91}, {"c": "Izrael", "v": 23.99}, {"c": "Észtország", "v": 24.01}, {"c": "Franciaország", "v": 24.05}, {"c": "OECD-átlag", "v": 24.64}, {"c": "Egyesült Államok", "v": 24.77}, {"c": "Dánia", "v": 24.84}, {"c": "Kolumbia", "v": 24.88}, {"c": "Svédország", "v": 25.01}, {"c": "Írország", "v": 25.25}, {"c": "Portugália", "v": 25.42}, {"c": "Finnország", "v": 25.53}, {"c": "Korea", "v": 25.62}, {"c": "Japán", "v": 26.04}, {"c": "Kanada", "v": 26.19}, {"c": "Egyesült Királyság", "v": 26.26}, {"c": "Norvégia", "v": 26.44}, {"c": "Spanyolország", "v": 26.87}, {"c": "Izland", "v": 27.49}, {"c": "Chile", "v": 27.88}, {"c": "Görögország", "v": 28.01}, {"c": "Ausztrália", "v": 28.57}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}, {"c": "Törökország", "v": 28.57}], "2023": [{"c": "Szlovákia", "v": 12.69}, {"c": "Ausztria", "v": 18.2}, {"c": "Lengyelország", "v": 19.01}, {"c": "Olaszország", "v": 19.98}, {"c": "Lettország", "v": 21.16}, {"c": "Magyarország", "v": 21.38}, {"c": "Belgium", "v": 21.61}, {"c": "Németország", "v": 21.63}, {"c": "Luxemburg", "v": 22.36}, {"c": "Litvánia", "v": 22.71}, {"c": "OECD-EU 22", "v": 22.75}, {"c": "Szlovénia", "v": 22.77}, {"c": "Csehország", "v": 22.96}, {"c": "Észtország", "v": 23.2}, {"c": "Svájc", "v": 23.49}, {"c": "Hollandia", "v": 23.83}, {"c": "Izrael", "v": 23.99}, {"c": "Franciaország", "v": 24.07}, {"c": "Kolumbia", "v": 24.39}, {"c": "OECD-átlag", "v": 24.55}, {"c": "Dánia", "v": 24.89}, {"c": "Egyesült Államok", "v": 24.91}, {"c": "Svédország", "v": 25.14}, {"c": "Írország", "v": 25.2}, {"c": "Portugália", "v": 25.63}, {"c": "Korea", "v": 25.75}, {"c": "Finnország", "v": 25.89}, {"c": "Japán", "v": 26.07}, {"c": "Kanada", "v": 26.12}, {"c": "Egyesült Királyság", "v": 26.2}, {"c": "Norvégia", "v": 26.29}, {"c": "Spanyolország", "v": 26.95}, {"c": "Chile", "v": 27.03}, {"c": "Görögország", "v": 28.04}, {"c": "Izland", "v": 28.08}, {"c": "Ausztrália", "v": 28.57}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}, {"c": "Törökország", "v": 28.57}], "2024": [{"c": "Szlovákia", "v": 14.24}, {"c": "Lengyelország", "v": 15.91}, {"c": "Ausztria", "v": 18.4}, {"c": "Olaszország", "v": 19.85}, {"c": "Szlovénia", "v": 21.5}, {"c": "Belgium", "v": 21.61}, {"c": "Németország", "v": 21.68}, {"c": "Lettország", "v": 21.75}, {"c": "Magyarország", "v": 22.25}, {"c": "Luxemburg", "v": 22.46}, {"c": "Litvánia", "v": 22.67}, {"c": "OECD-EU 22", "v": 22.76}, {"c": "Hollandia", "v": 23.44}, {"c": "Svájc", "v": 23.5}, {"c": "Korea", "v": 23.72}, {"c": "Izrael", "v": 23.88}, {"c": "Franciaország", "v": 24.2}, {"c": "Észtország", "v": 24.4}, {"c": "OECD-átlag", "v": 24.5}, {"c": "Dánia", "v": 24.84}, {"c": "Kolumbia", "v": 24.86}, {"c": "Portugália", "v": 24.89}, {"c": "Egyesült Államok", "v": 24.98}, {"c": "Csehország", "v": 24.99}, {"c": "Japán", "v": 25.32}, {"c": "Svédország", "v": 25.33}, {"c": "Írország", "v": 25.65}, {"c": "Norvégia", "v": 25.84}, {"c": "Finnország", "v": 25.87}, {"c": "Kanada", "v": 26.08}, {"c": "Egyesült Királyság", "v": 26.3}, {"c": "Chile", "v": 26.5}, {"c": "Izland", "v": 26.94}, {"c": "Spanyolország", "v": 27.04}, {"c": "Görögország", "v": 27.17}, {"c": "Ausztrália", "v": 28.57}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}, {"c": "Törökország", "v": 28.57}], "2025": [{"c": "Lengyelország", "v": 16.9}, {"c": "Szlovákia", "v": 17.66}, {"c": "Ausztria", "v": 18.58}, {"c": "Olaszország", "v": 20.09}, {"c": "Lettország", "v": 21.31}, {"c": "Magyarország", "v": 21.58}, {"c": "Litvánia", "v": 21.6}, {"c": "Belgium", "v": 21.61}, {"c": "Németország", "v": 21.74}, {"c": "Luxemburg", "v": 22.67}, {"c": "Szlovénia", "v": 22.96}, {"c": "OECD-EU 22", "v": 23.1}, {"c": "Svájc", "v": 23.33}, {"c": "Izrael", "v": 23.59}, {"c": "Hollandia", "v": 23.85}, {"c": "Korea", "v": 23.86}, {"c": "Franciaország", "v": 24.22}, {"c": "OECD-átlag", "v": 24.38}, {"c": "Kolumbia", "v": 24.44}, {"c": "Észtország", "v": 24.55}, {"c": "Egyesült Államok", "v": 24.88}, {"c": "Dánia", "v": 24.92}, {"c": "Csehország", "v": 25.13}, {"c": "Portugália", "v": 25.13}, {"c": "Norvégia", "v": 25.27}, {"c": "Svédország", "v": 25.46}, {"c": "Írország", "v": 25.56}, {"c": "Finnország", "v": 25.81}, {"c": "Kanada", "v": 26.27}, {"c": "Japán", "v": 26.27}, {"c": "Egyesült Királyság", "v": 26.38}, {"c": "Izland", "v": 26.91}, {"c": "Spanyolország", "v": 26.98}, {"c": "Chile", "v": 27.09}, {"c": "Görögország", "v": 27.23}, {"c": "Ausztrália", "v": 28.57}, {"c": "Costa Rica", "v": 28.57}, {"c": "Mexikó", "v": 28.57}, {"c": "Új-Zéland", "v": 28.57}, {"c": "Törökország", "v": 28.57}]};
+    const allCountries = Array.from(new Set(
+      years.flatMap(y => HIST[String(y)].map(d => d.c))
+    )).sort((a, b) => a.localeCompare(b, 'hu'));
 
-    const years = Object.keys(HIST).map(Number).sort((a,b)=>a-b);
-    let currentIdx = years.indexOf(2025);
-    if (currentIdx < 0) currentIdx = years.length - 2;
+    const NO_SUPPORT_BASELINE_SERIES = 0.28571429 * 100;
 
-    let chart = null;
+    const seriesByCountry = {};
+    const supportByCountry = {};
+    allCountries.forEach(c => {
+      seriesByCountry[c] = years.map(y => {
+        const row = (HIST[String(y)] || []).find(d => d.c === c);
+        return row ? row.v : null;
+      });
+      supportByCountry[c] = seriesByCountry[c].map(v =>
+        v !== null && v < NO_SUPPORT_BASELINE_SERIES
+          ? +(NO_SUPPORT_BASELINE_SERIES - v).toFixed(2)
+          : null
+      );
+    });
 
-    function render() {
-      const year = years[currentIdx];
-      const data = HIST[String(year)] || [];
-      document.getElementById('yearLabel').textContent = year;
-      document.getElementById('prevBtn').disabled = currentIdx === 0;
-      document.getElementById('nextBtn').disabled = currentIdx === years.length - 1;
+    const countryColors = {};
+    let paletteIdx = 0;
 
-      const labels = data.map(d => d.c);
-      const values = data.map(d => d.v);
-      const colors = data.map(d => d.c.includes('OECD') ? '#0ea5e9' : '#ef4444');
+    function colorFor(country) {
+      if (country === 'Magyarország') return '#ef4444';
+      if (country.includes('OECD')) return '#0ea5e9';
+      if (!countryColors[country]) {
+        countryColors[country] = PALETTE[paletteIdx % PALETTE.length];
+        paletteIdx++;
+      }
+      return countryColors[country];
+    }
 
-      if (chart) chart.destroy();
+    let seriesChart = null;
 
-      chart = new Chart(document.getElementById('chart'), {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            data: values,
-            backgroundColor: colors,
-            borderWidth: 0,
-            borderRadius: 3,
-            barThickness: 14
-          }]
-        },
+    function renderCountryGrid() {
+      const grid = document.getElementById('countryGrid');
+      grid.innerHTML = '';
+      allCountries.forEach(c => {
+        const label = document.createElement('label');
+        label.className = 'country-item';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = c;
+        cb.checked = (c === 'Magyarország');
+        cb.addEventListener('change', renderSeriesChart);
+        const swatch = document.createElement('span');
+        swatch.className = 'swatch';
+        label.appendChild(cb);
+        label.appendChild(swatch);
+        label.appendChild(document.createTextNode(c));
+        grid.appendChild(label);
+      });
+    }
+
+    function getSelectedCountries() {
+      return Array.from(document.querySelectorAll('#countryGrid input:checked')).map(cb => cb.value);
+    }
+
+    let seriesMetric = 'support'; // 'support' | 'disadvantage'
+
+    function dataFor(country) {
+      return seriesMetric === 'support' ? supportByCountry[country] : seriesByCountry[country];
+    }
+
+    function metricLabel() {
+      return seriesMetric === 'support' ? 'Családtámogatás' : 'Szegénységi hátrány';
+    }
+
+    function renderSeriesChart() {
+      const selected = getSelectedCountries();
+
+      // update swatch colors next to checked items
+      document.querySelectorAll('#countryGrid .country-item').forEach(item => {
+        const cb = item.querySelector('input');
+        const swatch = item.querySelector('.swatch');
+        swatch.style.background = cb.checked ? colorFor(cb.value) : 'transparent';
+      });
+
+      const datasets = selected.map(c => ({
+        label: c,
+        data: dataFor(c),
+        borderColor: colorFor(c),
+        backgroundColor: colorFor(c),
+        borderWidth: 1.8,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        tension: 0.25,
+        spanGaps: true
+      }));
+
+      // 28,57%-os referencia: a családtámogatás nélküli szegénységi hátrány.
+      const povertyBaselinePlugin = {
+        id: 'povertyBaseline',
+        afterDraw(chart) {
+          const yScale = chart.scales.y;
+          const xScale = chart.scales.x;
+          if (!yScale || !xScale) return;
+
+          const value = NO_SUPPORT_BASELINE_SERIES;
+          const y = yScale.getPixelForValue(value);
+          const left = xScale.left;
+          const right = xScale.right;
+
+          if (y < yScale.top || y > yScale.bottom) return;
+
+          const ctx = chart.ctx;
+          ctx.save();
+
+          // Fekete szaggatott referencia-vonal
+          ctx.beginPath();
+          ctx.setLineDash([7, 5]);
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = '#000000';
+          ctx.moveTo(left, y);
+          ctx.lineTo(right, y);
+          ctx.stroke();
+
+          // Adatfelirat
+          const label = '28,57% – szegénységi hátrány';
+          ctx.setLineDash([]);
+          ctx.font = '600 11px system-ui, -apple-system, "Segoe UI", sans-serif';
+
+          const paddingX = 6;
+          const paddingY = 4;
+          const textWidth = ctx.measureText(label).width;
+          const boxWidth = textWidth + paddingX * 2;
+          const boxHeight = 11 + paddingY * 2;
+          const boxX = Math.max(left + 2, right - boxWidth - 2);
+          const boxY = Math.max(yScale.top + 2, y - boxHeight - 4);
+
+          ctx.fillStyle = 'rgba(255,255,255,0.92)';
+          ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+          ctx.fillStyle = '#000000';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, boxX + paddingX, boxY + boxHeight / 2);
+
+          ctx.restore();
+        }
+      };
+
+      if (seriesChart) seriesChart.destroy();
+      seriesChart = new Chart(document.getElementById('seriesChart'), {
+        type: 'line',
+        data: { labels: years, datasets },
         options: {
-          indexAxis: 'y',
           responsive: true,
           maintainAspectRatio: false,
-          animation: { duration: 350 },
+          animation: { duration: 300 },
+          interaction: { mode: 'index', intersect: false },
           plugins: {
-            legend: { display: false },
+            legend: {
+              display: true,
+              position: 'top',
+              labels: { boxWidth: 12, boxHeight: 12, font: { size: 11 }, color: '#334155' }
+            },
             tooltip: {
               backgroundColor: '#1e293b',
               titleFont: { size: 13 },
               bodyFont: { size: 12 },
               padding: 10,
               callbacks: {
-                label: ctx => `Szegénységi hátrány: ${ctx.raw.toFixed(2)}%`
+                label: ctx => `${ctx.dataset.label}: ${ctx.raw === null ? 'nincs adat' : ctx.raw.toFixed(2) + '%'} (${metricLabel()})`
               }
-            },
-            datalabels: {
-              anchor: 'end',
-              align: 'right',
-              offset: 3,
-              color: '#334155',
-              font: { size: 10, weight: '600' },
-              formatter: v => v.toFixed(1) + '%'
             }
           },
           scales: {
             x: {
-              beginAtZero: true,
-              max: 35,
-              ticks: { callback: v => v + '%' },
-              title: {
-                display: true,
-                text: 'Szegénységi hátrány egy fogyasztási egységre vetítve (%)',
-                font: { size: 11 },
-                color: '#64748b'
-              },
-              grid: { color: '#f1f5f9' }
+              grid: { color: '#f1f5f9' },
+              ticks: { font: { size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 }
             },
             y: {
-              ticks: { font: { size: 11 }, autoSkip: false },
-              grid: { display: false }
+              beginAtZero: true,
+              max: 32,
+              grid: { color: '#f1f5f9' },
+              ticks: { callback: v => v + '%', font: { size: 11 } },
+              title: {
+                display: true,
+                text: metricLabel() + ' (%)',
+                font: { size: 11 },
+                color: '#64748b'
+              }
             }
-          },
-          layout: { padding: { right: 42 } }
+          }
         },
-        plugins: [ChartDataLabels]
+        plugins: [povertyBaselinePlugin]
       });
     }
 
-    document.getElementById('prevBtn').addEventListener('click', () => {
-      if (currentIdx > 0) { currentIdx--; render(); }
+    renderCountryGrid();
+    renderSeriesChart();
+
+    document.getElementById('selectAllBtn').addEventListener('click', () => {
+      document.querySelectorAll('#countryGrid input').forEach(cb => cb.checked = true);
+      renderSeriesChart();
     });
-    document.getElementById('nextBtn').addEventListener('click', () => {
-      if (currentIdx < years.length - 1) { currentIdx++; render(); }
+    document.getElementById('clearAllBtn').addEventListener('click', () => {
+      document.querySelectorAll('#countryGrid input').forEach(cb => cb.checked = false);
+      renderSeriesChart();
     });
 
-    // Keyboard support
-    document.addEventListener('keydown', e => {
-      if (e.key === 'ArrowLeft') document.getElementById('prevBtn').click();
-      if (e.key === 'ArrowRight') document.getElementById('nextBtn').click();
+    const metricSwitch = document.getElementById('metricSwitch');
+    metricSwitch.classList.toggle('on', seriesMetric === 'disadvantage');
+    metricSwitch.addEventListener('click', () => {
+      seriesMetric = seriesMetric === 'support' ? 'disadvantage' : 'support';
+      metricSwitch.classList.toggle('on', seriesMetric === 'disadvantage');
+      renderSeriesChart();
     });
 
-    render();
+    // ---------- Nézetváltó kapcsoló ----------
+    const viewSwitch = document.getElementById('viewSwitch');
+    const yearView = document.getElementById('yearView');
+    const seriesView = document.getElementById('seriesView');
+    let seriesMode = false;
+
+    viewSwitch.addEventListener('click', () => {
+      seriesMode = !seriesMode;
+      viewSwitch.classList.toggle('on', seriesMode);
+      yearView.style.display = seriesMode ? 'none' : '';
+      seriesView.style.display = seriesMode ? '' : 'none';
+      if (seriesMode && seriesChart) {
+        seriesChart.resize();
+      }
+    });
+
+    // ---------- PNG letöltés (cím + legenda + grafikon) ----------
+    function downloadChartAsPng(chartInstance, filename, titleText) {
+      if (!chartInstance) return;
+
+      const canvas = chartInstance.canvas;
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // Extra hely a címnek (fehér háttér + szöveg)
+      const titleH = Math.round(48 * dpr);
+      const pad = Math.round(16 * dpr);
+      const outW = w + pad * 2;
+      const outH = h + titleH + pad * 2;
+
+      const off = document.createElement('canvas');
+      off.width = outW;
+      off.height = outH;
+      const ctx = off.getContext('2d');
+
+      // Fehér háttér
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, outW, outH);
+
+      // Cím
+      ctx.fillStyle = '#0f172a';
+      ctx.font = `700 ${Math.round(16 * dpr)}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(titleText, outW / 2, titleH / 2 + pad / 2);
+
+      // Grafikon (legenda + sávok/vonalak a Chart.js canvas-én van)
+      ctx.drawImage(canvas, pad, titleH + pad);
+
+      // Letöltés
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = off.toDataURL('image/png');
+      link.click();
+    }
+
+    document.getElementById('downloadYearBtn').addEventListener('click', () => {
+      const year = years[currentIdx];
+      const title = `Szegénységi hátrány a 2 gyermekes családoknak – ${year}`;
+      downloadChartAsPng(chart, `szegenysegi-hatrany-${year}.png`, title);
+    });
+
+    document.getElementById('downloadSeriesBtn').addEventListener('click', () => {
+      const metric = seriesMetric === 'support' ? 'Családtámogatás' : 'Szegénységi hátrány';
+      const title = `Idősoros nézet – ${metric} (2000–2025)`;
+      const fname = seriesMetric === 'support'
+        ? 'idosoros-csaladtamogatas.png'
+        : 'idosoros-szegenysegi-hatrany.png';
+      downloadChartAsPng(seriesChart, fname, title);
+    });
   </script>
 </body>
 </html>
